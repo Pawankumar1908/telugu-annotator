@@ -73,11 +73,13 @@ def to_roman(text):
 
 def authenticate(username, password):
     df = safe_read(USERS)
-    if df.empty:
-        return False
+
+    # normalize
     df["username"] = df["username"].astype(str).str.strip().str.lower()
     df["password"] = df["password"].astype(str).str.strip()
-    return ((df["username"] == username.lower()) & (df["password"] == password)).any()
+
+    return ((df["username"] == username.lower()) &
+            (df["password"] == password)).any()
 
 def next_serial():
     df = safe_read(NEW)
