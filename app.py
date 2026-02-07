@@ -13,10 +13,12 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "local_dev_secret")
 
 DATA = "data"
-USERS = f"{DATA}/users.csv"
-NEW = f"{DATA}/new_annotations.csv"
-REPO = f"{DATA}/repository.csv"
+USERS = os.path.join(DATA, "users.csv")
+NEW = os.path.join(DATA, "new_annotations.csv")
+REPO = os.path.join(DATA, "repository.csv")
 ENC = "utf-8-sig"
+
+os.makedirs(DATA, exist_ok=True)
 
 # --------------------------------------------------
 # FILE SAFETY
@@ -25,22 +27,31 @@ def ensure_file(path, columns):
     if not os.path.exists(path):
         pd.DataFrame(columns=columns).to_csv(path, index=False, encoding=ENC)
 
+ensure_file(USERS, ["username", "password"])
 ensure_file(NEW, [
-    "serial_no", "proverb_telugu", "proverb_english",
-    "meaning_english", "keywords", "annotator", "timestamp"
+    "serial_no",
+    "proverb_telugu",
+    "proverb_english",
+    "meaning_english",
+    "keywords",
+    "annotator",
+    "timestamp"
 ])
-
 ensure_file(REPO, [
-    "proverb_telugu", "proverb_english", "meaning_english", "keywords"
+    "proverb_telugu",
+    "proverb_english",
+    "meaning_english",
+    "keywords"
 ])
 
 # --------------------------------------------------
 # HELPERS
 # --------------------------------------------------
 def safe_read(path):
-    if os.path.exists(path):
+    try:
         return pd.read_csv(path, encoding=ENC)
-    return pd.DataFrame()
+    except:
+        return pd.DataFrame()
 
 def normalize(text):
     return " ".join(str(text).lower().strip().split())
@@ -49,13 +60,17 @@ def to_roman(text):
     try:
         return transliterate(text, sanscript.TELUGU, sanscript.ITRANS).lower()
     except:
-        return text.lower()
+        return str(text).lower()
 
 def authenticate(username, password):
-    df = pd.read_csv(USERS, encoding=ENC)
+    df = safe_read(USERS)
+    if df.empty or "username" not in df or "password" not in df:
+        return False
+
     df["username"] = df["username"].astype(str).str.strip().str.lower()
     df["password"] = df["password"].astype(str).str.strip()
-    return ((df["username"] == username.lower()) & (df["password"] == password)).any()
+    return ((df["username"] == username.lower()) &
+            (df["password"] == password)).any()
 
 def is_admin():
     return session.get("role") == "admin"
@@ -66,16 +81,19 @@ def next_serial():
 
 def contribution_count(name):
     df = safe_read(NEW)
-    if df.empty:
-        return 0
-    return len(df[df["annotator"] == name])
+    return 0 if df.empty else len(df[df["annotator"] == name])
 
 # --------------------------------------------------
-# DUPLICATE CHECK + TRANSLITERATION
+# DUPLICATE CHECK API (NO BAD REQUEST)
 # --------------------------------------------------
 @app.route("/verify", methods=["POST"])
 def verify():
-    value = request.json.get("value", "")
+    data = request.get_json(silent=True) or {}
+    value = data.get("value", "").strip()
+
+    if not value:
+        return jsonify({"status": "empty"})
+
     key = normalize(to_roman(value))
 
     for src in [REPO, NEW]:
@@ -99,7 +117,6 @@ def verify():
 # LOGIN
 # --------------------------------------------------
 @app.route("/", methods=["GET", "POST"])
-
 def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip().lower()
@@ -115,7 +132,6 @@ def login():
             session["annotator"] = name if name else username
             session["role"] = "admin" if username == "admin" else "annotator"
             return redirect("/welcome")
-        print("FORM DATA:", request.form)
 
         return render_template("login.html", error="Invalid credentials")
 
@@ -132,7 +148,11 @@ def welcome():
     if is_admin():
         return redirect("/admin/dashboard")
 
-    return render_template("welcome.html", name=session["annotator"])
+    return render_template(
+        "welcome.html",
+        name=session["annotator"],
+        count=contribution_count(session["annotator"])
+    )
 
 # --------------------------------------------------
 # ANNOTATOR PAGE
@@ -143,7 +163,6 @@ def annotate():
         return redirect("/")
 
     name = session["annotator"]
-    count = contribution_count(name)
     message = None
 
     if request.method == "POST":
@@ -151,10 +170,12 @@ def annotate():
 
         new_row = {
             "serial_no": next_serial(),
-            "proverb_telugu": request.form["proverb_telugu"],
-            "proverb_english": normalize(to_roman(request.form["proverb_english"])),
-            "meaning_english": request.form["meaning_english"],
-            "keywords": request.form["keywords"],
+            "proverb_telugu": request.form.get("proverb_telugu", "").strip(),
+            "proverb_english": normalize(to_roman(
+                request.form.get("proverb_english", "")
+            )),
+            "meaning_english": request.form.get("meaning_english", "").strip(),
+            "keywords": request.form.get("keywords", "").strip(),
             "annotator": name,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
@@ -162,18 +183,17 @@ def annotate():
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         df.to_csv(NEW, index=False, encoding=ENC)
 
-        message = "✅ Annotation saved"
-        count += 1
+        message = "✅ Annotation saved successfully"
 
     return render_template(
         "annotate.html",
         name=name,
-        count=count,
+        count=contribution_count(name),
         message=message
     )
 
 # --------------------------------------------------
-# ADMIN DASHBOARD
+# ADMIN PAGES
 # --------------------------------------------------
 @app.route("/admin/dashboard")
 def admin_dashboard():
@@ -203,7 +223,11 @@ def admin_repository():
 
     df = safe_read(REPO)
     records = df.to_dict(orient="records") if not df.empty else []
-    return render_template("admin_repository.html", records=records, total=len(records))
+    return render_template(
+        "admin_repository.html",
+        records=records,
+        total=len(records)
+    )
 
 @app.route("/admin/new")
 def admin_new():
@@ -212,7 +236,11 @@ def admin_new():
 
     df = safe_read(NEW)
     records = df.to_dict(orient="records") if not df.empty else []
-    return render_template("admin_new.html", records=records, total=len(records))
+    return render_template(
+        "admin_new.html",
+        records=records,
+        total=len(records)
+    )
 
 @app.route("/admin/approve/<int:serial_no>")
 def admin_approve(serial_no):
@@ -227,7 +255,12 @@ def admin_approve(serial_no):
 
     repo_df = safe_read(REPO)
     repo_df = pd.concat(
-        [repo_df, row[["proverb_telugu", "proverb_english", "meaning_english", "keywords"]]],
+        [repo_df, row[[
+            "proverb_telugu",
+            "proverb_english",
+            "meaning_english",
+            "keywords"
+        ]]],
         ignore_index=True
     )
 
@@ -246,8 +279,9 @@ def logout():
     session.clear()
     return redirect("/")
 
-import os
-
+# --------------------------------------------------
+# RUN
+# --------------------------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
