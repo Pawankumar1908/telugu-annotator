@@ -108,7 +108,20 @@ def login():
         if authenticate(username, password):
             session.clear()
             session["username"] = username
-            session["annotator"] = name
+            @app.route("/", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip().lower()
+        password = request.form.get("password", "").strip()
+        name = request.form.get("name", "").strip()
+
+        if not username or not password:
+            return render_template("login.html", error="Username & password required")
+
+        if authenticate(username, password):
+            session.clear()
+            session["username"] = username
+            session["annotator"] = name if name else username
             session["role"] = "admin" if username == "admin" else "annotator"
             return redirect("/welcome")
 
