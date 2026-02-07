@@ -109,6 +109,8 @@ def login():
             session.clear()
             session["username"] = username
             @app.route("/", methods=["GET", "POST"])
+    print("FORM DATA:", request.form)
+
 def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip().lower()
