@@ -72,14 +72,25 @@ def to_roman(text):
         return text.lower()
 
 def authenticate(username, password):
-    df = safe_read(USERS)
+    try:
+        df = safe_read(USERS)
+    except Exception:
+        return False
 
-    # normalize
-    df["username"] = df["username"].astype(str).str.strip().str.lower()
-    df["password"] = df["password"].astype(str).str.strip()
+    if set(df.columns) >= {"username", "password"}:
+        df["username"] = df["username"].astype(str).str.strip().str.lower()
+        df["password"] = df["password"].astype(str).str.strip()
+        return ((df["username"] == username.lower()) &
+                (df["password"] == password)).any()
 
-    return ((df["username"] == username.lower()) &
-            (df["password"] == password)).any()
+    if df.shape[1] >= 2:
+        df[0] = df[0].astype(str).str.strip().str.lower()
+        df[1] = df[1].astype(str).str.strip()
+        return ((df[0] == username.lower()) &
+                (df[1] == password)).any()
+
+    return False
+
 
 def next_serial():
     df = safe_read(NEW)
