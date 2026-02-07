@@ -207,8 +207,15 @@ def admin_dashboard():
 def admin_annotators():
     if not is_admin():
         return redirect("/")
-    stats = safe_read(ANNOTATORS).to_dict(orient="records")
-    return render_template("admin_annotators.html", stats=stats)
+
+    df = safe_read(ANNOTATORS)
+    annotators = df.to_dict(orient="records") if not df.empty else []
+
+    return render_template(
+        "admin_annotators.html",
+        annotators=annotators
+    )
+
 
 @app.route("/admin/repository")
 def admin_repository():
