@@ -1,5 +1,5 @@
-username,password,role
-admin,admin123,admin
-user1,pass123,user
-user2,pass123,user
-krishna,pass123,user
+username,password
+admin,admin123
+user1,pass123
+user2,pass123
+krishna,pass123
