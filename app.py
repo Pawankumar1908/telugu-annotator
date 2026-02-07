@@ -99,17 +99,6 @@ def verify():
 # LOGIN
 # --------------------------------------------------
 @app.route("/", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form["username"].strip().lower()
-        password = request.form["password"].strip()
-        name = request.form["name"].strip()
-
-        if authenticate(username, password):
-            session.clear()
-            session["username"] = username
-            @app.route("/", methods=["GET", "POST"])
-    print("FORM DATA:", request.form)
 
 def login():
     if request.method == "POST":
@@ -126,6 +115,7 @@ def login():
             session["annotator"] = name if name else username
             session["role"] = "admin" if username == "admin" else "annotator"
             return redirect("/welcome")
+        print("FORM DATA:", request.form)
 
         return render_template("login.html", error="Invalid credentials")
 
