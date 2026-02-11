@@ -1,32 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Login</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Page</title>
 
-    <!-- CSS MUST BE INSIDE HEAD -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body{
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background: linear-gradient(to right, #000428, #004e92);
+}
+
+.login-container{
+    width: 380px;
+    padding: 45px 35px;
+    border-radius: 18px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(10px);
+    box-shadow: 
+        0 10px 30px rgba(0,0,0,0.6),
+        0 0 20px rgba(255, 204, 0, 0.2);
+    color: #ffffff;
+}
+
+.login-container h2{
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 26px;
+    color: #ffcc00;
+}
+
+.input-group{
+    margin-bottom: 22px;
+    position: relative;
+}
+
+.input-group label{
+    display:block;
+    font-size:14px;
+    margin-bottom:6px;
+}
+
+.input-group input{
+    width:100%;
+    padding:12px 45px 12px 14px;
+    border-radius:10px;
+    border:2px solid transparent;
+    outline:none;
+    background: rgba(255,255,255,0.08);
+    color:white;
+    transition:0.3s;
+}
+
+.input-group input:focus{
+    border:2px solid #ffcc00;
+    box-shadow:0 0 8px #ffcc00;
+}
+
+.toggle-password{
+    position:absolute;
+    right:12px;
+    top:38px;
+    cursor:pointer;
+    width:20px;
+    height:20px;
+    fill:#ffcc00;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    background: linear-gradient(90deg, #ffcc00, #ffaa00);
+    font-weight:600;
+    cursor:pointer;
+}
+
+button:hover{
+    box-shadow:0 8px 20px rgba(255,204,0,0.4);
+}
+
+</style>
 </head>
+
 <body>
 
+<div class="login-container">
     <h2>Login</h2>
 
-    {% if error %}
-        <p style="color:red;">{{ error }}</p>
-    {% endif %}
+    <div class="input-group">
+        <label>Name</label>
+        <input type="text" placeholder="Enter your name">
+    </div>
 
-    <form method="POST" action="/">
-        <label>Name (any name):</label><br>
-        <input type="text" name="name" placeholder="Your name"><br><br>
+    <div class="input-group">
+        <label>Username</label>
+        <input type="text" placeholder="Enter username">
+    </div>
 
-        <label>Username:</label><br>
-        <input type="text" name="username" required><br><br>
+    <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter password">
 
-        <label>Password:</label><br>
-        <input type="password" name="password" required><br><br>
+        <!-- SVG Eye Icon -->
+        <svg class="toggle-password" onclick="togglePassword()" id="eyeIcon"
+             xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+        </svg>
+    </div>
 
-        <button type="submit">Login</button>
-    </form>
+    <button>Login</button>
+</div>
+
+<script>
+function togglePassword() {
+    const password = document.getElementById("password");
+
+    if (password.type === "password") {
+        password.type = "text";
+    } else {
+        password.type = "password";
+    }
+}
+</script>
 
 </body>
 </html>
