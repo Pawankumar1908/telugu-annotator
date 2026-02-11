@@ -60,11 +60,17 @@ def authenticate(username, password):
         return False
 
     df = pd.read_csv(USERS, encoding=ENC)
+
+    # If no headers, assume 2 columns
+    if "username" not in df.columns:
+        df.columns = ["username", "password"]
+
     df["username"] = df["username"].astype(str).str.strip().str.lower()
     df["password"] = df["password"].astype(str).str.strip()
 
     return ((df["username"] == username.lower()) &
             (df["password"] == password)).any()
+
 
 def is_admin():
     return session.get("role") == "admin"
