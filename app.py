@@ -250,6 +250,16 @@ def admin_approve(serial_no):
     new_df[new_df["serial_no"] != serial_no].to_csv(NEW, index=False, encoding=ENC)
 
     return redirect("/admin/new")
+# --------------------------------------------------
+# ADMIN → SWITCH TO ANNOTATOR
+# --------------------------------------------------
+@app.route("/switch-to-annotator", methods=["POST"])
+def switch_to_annotator():
+    if not is_admin():
+        return redirect("/")
+
+    session["role"] = "annotator"
+    return redirect("/annotate")
 
 # --------------------------------------------------
 # LOGOUT
